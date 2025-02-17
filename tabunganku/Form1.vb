@@ -94,6 +94,7 @@ Public Class Form1
     End Sub
 
     ' Prosedur untuk membaca dan menampilkan data dari file CSV
+    ' Membaca dan menampilkan data dari file CSV
     Private Sub BacaData(Optional customFilePath As String = "")
         Dim targetFile As String = If(String.IsNullOrEmpty(customFilePath), filePath, customFilePath)
 
@@ -110,7 +111,7 @@ Public Class Form1
         End If
 
         dgvRiwayat.Rows.Clear()
-        saldo = 0
+        saldo = 0  ' Reset saldo sebelum membaca file baru
 
         ' Membaca data dari file CSV
         Using reader As New StreamReader(targetFile)
@@ -126,10 +127,19 @@ Public Class Form1
                     Continue While
                 End If
 
-                ' Validasi data yang dibaca dan menambahkannya ke DataGridView
+                ' Pastikan data memiliki format yang benar (Tanggal, Jumlah, Keterangan)
                 If data.Length = 3 AndAlso IsNumeric(data(1)) Then
-                    dgvRiwayat.Rows.Add(data(0), Convert.ToDecimal(data(1)).ToString("N0"), data(2))
-                    saldo += Convert.ToDecimal(data(1)) ' Menambah saldo berdasarkan data yang dibaca
+                    Dim jumlah As Decimal = Convert.ToDecimal(data(1))
+                    Dim keterangan As String = data(2).Trim()
+
+                    dgvRiwayat.Rows.Add(data(0), jumlah.ToString("N0"), keterangan)
+
+                    ' Cek jenis transaksi: Jika "Menabung", tambah saldo; jika "Penarikan", kurangi saldo
+                    If keterangan.StartsWith("Menabung") Then
+                        saldo += jumlah
+                    ElseIf keterangan.StartsWith("Penarikan") Then
+                        saldo -= jumlah
+                    End If
                 End If
             End While
         End Using
@@ -137,6 +147,7 @@ Public Class Form1
         ' Update label saldo setelah membaca file
         lblSaldo.Text = "Rp " & saldo.ToString("N0")
     End Sub
+
 
     ' Membuka file CSV lain
     Private Sub btnBukaFile_Click(sender As Object, e As EventArgs) Handles btnBukaFile.Click
@@ -169,6 +180,8 @@ Public Class Form1
                 MessageBox.Show("File tabungan baru berhasil dibuat!", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
         End Using
+        lblFileName.Text = "File: " & Path.GetFileName(filePath)
+
     End Sub
 
     ' Menghapus baris yang dipilih di DataGridView dan memperbarui file CSV
@@ -231,5 +244,9 @@ Public Class Form1
     ' Menyimpan perubahan data ketika edit sel di DataGridView
     Private Sub dgvRiwayat_CellEndEdit(sender As Object, e As DataGridViewCellEventArgs) Handles dgvRiwayat.CellEndEdit
         SimpanUlangCSV() ' Menyimpan data setelah perubahan di DataGridView
+    End Sub
+
+    Private Sub GroupBox1_Enter(sender As Object, e As EventArgs) Handles GroupBox1.Enter
+
     End Sub
 End Class
